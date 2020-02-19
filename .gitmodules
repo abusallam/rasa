@@ -1,0 +1,8 @@
+[submodule "rasa-sdk"]
+	path = rasa-sdk
+	url = https://github.com/RasaHQ/rasa-sdk
+	branch = master
+[submodule "rasa"]
+	path = rasa
+	url = https://github.com/RasaHQ/rasa
+	branch = 1.7.x
