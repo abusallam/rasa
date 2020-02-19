@@ -9,6 +9,7 @@ build_image:
   services:
   - docker:dind
   variables:
+    DOCKER_HOST: ssh://root@docker-host01
     DOCKER_DRIVER: overlay
     GIT_SUBMODULE_STRATEGY: recursive
   script:
@@ -54,6 +55,9 @@ before_script:
   ## known_hosts creation and key verification - important for ssh connection to docker swarm host
   - touch ~/.ssh/known_hosts
   - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+  - git submodule sync --recursive
+  - git submodule update --init --recursive
 
 
 deploy-to-swarm:
