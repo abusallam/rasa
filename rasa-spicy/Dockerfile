@@ -41,10 +41,6 @@ RUN apt-get update -qq \
 # Make sure we have the latest pip version
 RUN pip install -U pip
 
-# Install spacy model
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
-    && python -m spacy link en_core_web_md en
-
 
 COPY rasa/README.md .
 COPY rasa/setup.py .
@@ -56,6 +52,11 @@ COPY rasa/requirements.txt .
 
 # Install Rasa and its dependencies
 RUN pip install --no-cache-dir -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
+
+# Install spacy model
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
+    && python -m spacy link en_core_web_md en
+
 
 # Install Rasa as package
 COPY rasa/rasa ./rasa
