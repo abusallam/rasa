@@ -1,0 +1,157 @@
+version: "3.4"
+
+x-database-credentials: &database-credentials
+  DB_HOST: "webinarbot-db"
+  DB_PORT: "5432"
+  DB_USER: "${DB_USER:-admin}"
+  DB_PASSWORD: "${DB_PASSWORD:-changeme}"
+  DB_LOGIN_DB: "${DB_LOGIN_DB:-rasa}"
+
+x-rabbitmq-credentials: &rabbitmq-credentials
+  RABBITMQ_HOST: "webinarbot-rabbit"
+  RABBITMQ_USERNAME: "user"
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+x-rasax-credentials: &rasax-credentials
+  LOCAL_MODE: "false"
+  RASA_X_HOST: "http://webinarbot-x:5002"
+  RASA_X_TOKEN: ${RASA_X_TOKEN}
+  JWT_SECRET: ${JWT_SECRET}
+  RASA_USER_APP: "http://webinarbot-app:5055"
+  RASA_PRODUCTION_HOST: "http://webinarbot-production:5005"
+  RASA_WORKER_HOST: "http://webinarbot-worker:5005"
+  RASA_TOKEN: "${RASA_TOKEN}"
+  RASA_WORKER_TOKEN: "${RASA_TOKEN}"
+
+x-rasa-credentials: &rasa-credentials
+  <<: *rabbitmq-credentials
+  <<: *rasax-credentials
+  <<: *database-credentials
+  RASA_TOKEN: ${RASA_TOKEN}
+  RASA_MODEL_PULL_INTERVAL: 10
+
+x-rasa-services: &default-rasa-service
+  image: "git.gonkar.com:5001/beta/traefik-rasa-webinar/rasa-spicy:latest"
+  ports:
+  - "5005"
+  command: >
+    x
+    --no-prompt
+    --production
+    --port 5005
+    --jwt-method HS256
+    --jwt-secret '${JWT_SECRET}'
+    --auth-token '${RASA_TOKEN}'
+    --cors "*"
+  depends_on:
+  - webinarbot-x
+  - webinarbot-rabbit
+
+services:
+  webinarbot-x:
+    image: "rasa/rasa-x:${RASA_X_VERSION}"
+    ports:
+      - "5002"
+    networks:
+      - default
+      - traefik-net
+    volumes:
+      - /data/webinarbot/app/models:/app/models
+      - /data/webinarbot/app/environments.yml:/app/environments.yml
+      - /data/webinarbot/app/endpoints.yml:/app/endpoints.yml
+    environment:
+      <<: *database-credentials
+      <<: *rasa-credentials
+      SELF_PORT: "5002"
+      DB_DATABASE: "${DB_DATABASE:-rasa}"
+      RASA_MODEL_DIR: "/app/models"
+      RABBITMQ_QUEUE: "rasa_production_events"
+      PASSWORD_SALT: ${PASSWORD_SALT}
+      RASA_X_USER_ANALYTICS: "0"
+      SANIC_RESPONSE_TIMEOUT: "3600"
+      METRICS_CONSENT: "false"
+    depends_on:
+      - webinarbot-db
+    deploy:
+      labels:
+        # v2.1
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-net"
+        - "traefik.http.routers.webinarbot-dashboard.rule=Host(`dashboard.webinarbot.saas.gonkar.com`)"
+        - "traefik.http.routers.webinarbot-dashboard.entrypoints=https"
+        - "traefik.http.services.webinarbot-dashboard.loadbalancer.server.port=5002"
+        - "traefik.http.routers.webinarbot-dashboard.tls.certresolver=certbot"
+
+
+  webinarbot-production:
+    <<: *default-rasa-service
+    environment:
+      <<: *rasa-credentials
+      DB_DATABASE: "tracker"
+      RABBITMQ_QUEUE: "rasa_production_events"
+      RASA_MODEL_SERVER: "http://webinarbot-x:5002/api/projects/default/models/tags/production"
+    networks:
+      - default
+      - traefik-net
+    deploy:
+      labels:
+        # v2.1
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-net"
+        - "traefik.http.routers.webinarbot.rule=Host(`webinarbot.saas.gonkar.com`)"
+        - "traefik.http.routers.webinarbot.entrypoints=https"
+        - "traefik.http.services.webinarbot.loadbalancer.server.port=5005"
+        - "traefik.http.routers.webinarbot.tls.certresolver=certbot"
+
+  webinarbot-worker:
+    <<: *default-rasa-service
+    networks:
+      - default
+    environment:
+      <<: *rasa-credentials
+      DB_DATABASE: "worker_tracker"
+      RABBITMQ_QUEUE: "rasa_worker_events"
+      RASA_MODEL_SERVER: "http://webinarbot-x:5002/api/projects/default/models/tags/production"
+
+  webinarbot-db:
+    image: "postgres"
+    environment:
+      POSTGRES_USER: "${DB_USER:-admin}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB_DATABASE:-rasa}"
+      PGDATA: /data/postgres
+    volumes:
+      - /data/webinarbot/pgsql/data:/data/postgres
+    networks:
+      - default
+
+
+  webinarbot-rabbit:
+    image: "bitnami/rabbitmq:3.7.17"
+    environment:
+      RABBITMQ_HOST: "webinarbot-rabbit"
+      RABBITMQ_USERNAME: "user"
+      RABBITMQ_PASSWORD: "${RABBITMQ_PASSWORD}"
+      RABBITMQ_DISK_FREE_LIMIT: "{mem_relative, 0.1}"
+    networks:
+      - default
+
+  webinarbot-app:
+    image: "git.gonkar.com:5001/beta/traefik-rasa-webinar/rasa-sdk:latest"
+    ports:
+      - "5055"
+    networks:
+      - default
+
+  rasa-redis:
+    image: "bitnami/redis:5.0.5"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      - default      
+
+networks:
+  default:
+    driver: overlay
+  traefik-net:
+    external: true

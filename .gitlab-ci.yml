@@ -1,0 +1,81 @@
+stages:
+  - build
+  - deploy
+
+
+build_image:
+  stage: build
+  image: docker:git
+  services:
+  - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN git.gonkar.com:5001
+    - docker build --no-cache -t git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-spicy:latest . -f rasa-spicy/Dockerfile
+    - docker build --no-cache -t git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-sdk:latest . -f rasa-sdk/Dockerfile
+    - docker push git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-spicy:latest
+    - docker push git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-sdk:latest
+  only:
+    changes:
+      - rasa-spicy/*
+      - rasa-sdk/*
+      - rasa-config/*
+      - .gitlab-ci.yml
+
+
+before_script:
+  ##
+  ## Install ssh-agent if not already installed, it is required by Docker.
+  ## (change apt-get to yum if you use an RPM-based image)
+  ##
+  - 'which ssh-agent || ( apk update && apk add openssh-client )'
+
+  ##
+  ## Run ssh-agent (inside the build environment)
+  ##
+  - eval $(ssh-agent -s)
+
+  ##
+  ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+  ## We're using tr to fix line endings which makes ed25519 keys work
+  ## without extra base64 encoding.
+  ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+  ##
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+
+  ##
+  ## Create the SSH directory and give it the right permissions
+  ##
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+
+  ## known_hosts creation and key verification - important for ssh connection to docker swarm host
+  - touch ~/.ssh/known_hosts
+  - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+
+deploy-to-swarm:
+  stage: deploy
+  variables:
+    DOCKER_HOST: ssh://root@docker-host01
+    SERVICE_NAME: webinarbot
+    RASA_X_VERSION: 0.25.2
+    RASA_TOKEN: Fy6Q5a2DrTXXd8g==
+    RASA_X_TOKEN: Fy6Q5a2DrTXXd8g==
+    PASSWORD_SALT: Fy6Q5a2DrTXXd8g==
+    JWT_SECRET: Fy6Q5a2DrTXXd8g==
+    RABBITMQ_PASSWORD: Fy6Q5a2DrTXXd8g==
+    POSTGRES_PASSWORD: changeme
+    REDIS_PASSWORD: Fy6Q5a2DrTXXd8g==
+    GIT_SUBMODULE_STRATEGY: recursive
+  image: docker:latest
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+    - docker stack deploy --prune --with-registry-auth --compose-file=docker-compose.yml webinarbot
+  environment:
+    name: master
+    url: http://dashboard.webinarbot.saas.gonkar.com
+  only:
+    - master

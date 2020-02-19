@@ -1,0 +1,7 @@
+rasa:
+   production:
+      url: http://webinarbot-production:5005
+      token: Fy6Q5a2DrTXXd8g==
+   worker:
+      url: http://webinarbot-worker:5005
+      token: Fy6Q5a2DrTXXd8g==

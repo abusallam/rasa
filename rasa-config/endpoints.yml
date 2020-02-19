@@ -1,0 +1,61 @@
+# This file contains the different endpoints your bot can use.
+
+# Server where the models are pulled from.
+# https://rasa.com/docs/rasa/user-guide/running-the-server/#fetching-models-from-a-server/
+
+#models:
+#  url: http://my-server.com/models/default_core@latest
+#  wait_time_between_pulls:  10   # [optional](default: 100)
+
+# Server which runs your custom actions.
+# https://rasa.com/docs/rasa/core/actions/#custom-actions/
+
+action_endpoint:
+  url: "http://webinarbot-app:5055/webhook"
+
+# Tracker store which is used to store the conversations.
+# By default the conversations are stored in memory.
+# https://rasa.com/docs/rasa/api/tracker-stores/
+
+#tracker_store:
+#    type: redis
+#    url: <host of the redis instance, e.g. localhost>
+#    port: <port of your redis instance, usually 6379>
+#    db: <number of your database within redis, e.g. 0>
+#    password: <password used for authentication>
+
+#tracker_store:
+#    type: mongod
+#    url: mongodb://mongo:27017
+#    db: rasa
+#    username: admin
+#    password: changeme
+
+# Event broker which all conversation events should be streamed to.
+# https://rasa.com/docs/rasa/api/event-brokers/
+
+#event_broker:
+#  url: localhost
+#  username: username
+#  password: password
+#  queue: queue
+
+models:
+   url: http://webinarbot-x:5002/api/projects/default/models/tags/production
+   token: Fy6Q5a2DrTXXd8g==
+   wait_time_between_pulls: 2
+tracker_store:
+   type: sql
+   dialect: "postgresql"
+   url: webinarbot-db
+   port: 5432
+   username: admin
+   password: changeme
+   db: rasa
+   login_db: rasa
+event_broker:
+   type: "pika"
+   url: webinarbot-rabbit
+   username: user
+   password: Fy6Q5a2DrTXXd8g==
+   queue: rasa_production_events
