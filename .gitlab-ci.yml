@@ -9,7 +9,6 @@ build_image:
   services:
   - docker:dind
   variables:
-    DOCKER_HOST: ssh://root@docker-host01
     DOCKER_DRIVER: overlay
     GIT_SUBMODULE_STRATEGY: recursive
   script:
