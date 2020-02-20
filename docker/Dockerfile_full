@@ -44,25 +44,26 @@ RUN pip install -U pip
 # Download mitie model
 RUN wget -P /app/data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
 
-# Install spacy models
+# Copy only what we really need
+COPY rasa/README.md .
+COPY rasa/setup.py .
+COPY rasa/setup.cfg .
+COPY rasa/MANIFEST.in .
+COPY rasa/alt_requirements/ ./alt_requirements
+COPY rasa/requirements.txt .
+COPY rasa/LICENSE.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r alt_requirements/requirements_full.txt
+
+# Install and link spacy models
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.1.0/en_core_web_md-2.1.0.tar.gz#egg=en_core_web_md==2.1.0 --no-cache-dir > /dev/null \
  && python -m spacy link en_core_web_md en \
  && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.1.0/de_core_news_sm-2.1.0.tar.gz#egg=de_core_news_sm==2.1.0 --no-cache-dir > /dev/null \
  && python -m spacy link de_core_news_sm de
 
-# Copy only what we really need
-COPY README.md .
-COPY setup.py .
-COPY setup.cfg .
-COPY MANIFEST.in .
-COPY alt_requirements/ ./alt_requirements
-COPY requirements.txt .
-
-# Install Rasa and its dependencies
-RUN pip install --no-cache-dir -r alt_requirements/requirements_full.txt
-
 # Install Rasa as package
-COPY rasa ./rasa
+COPY rasa/rasa ./rasa
 RUN pip install .[sql,spacy,mitie]
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
@@ -71,7 +72,10 @@ FROM base AS runner
 WORKDIR /app
 
 # Copy over default pipeline config
-COPY sample_configs/config_pretrained_embeddings_spacy_duckling.yml config.yml
+COPY rasa/sample_configs/config_pretrained_embeddings_spacy_duckling.yml config.yml
+COPY rasa-config/credentials.yml credentials.yml
+COPY rasa-config/endpoints.yml endpoints.yml
+COPY rasa-config/environments.yml environments.yml
 
 # Copy over mitie model
 COPY --from=builder /app/data/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
