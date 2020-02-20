@@ -5,21 +5,6 @@ Rasa X deployment in Docker Swarm Cluster + Traefik Load Balancer
 Before we start with the deployment of the service it is important to check out the deployment.env file and set up 
 the enviroment variables we desire. It is IMPORTANT to change the default tokens, you can use command `openssl rand -base64 32` to create new secrets.
 
-## Traefik Deployment
-
-create the htpasswd file with the admin user to access the dashboard
-
-`htpasswd -c ./htpasswd admin`
-
-and start the stack
-
-`docker stack deploy -c traefik.yml traefik`
-
-Just wait few seconds for Traefik service to go up and setup letsencrypt automatically and you should be able to access the dashboard.
-
-## Rasa X stack deployment
-
-`docker stack deploy -c rasa-x.yml rasax`
 
 #### Rasa X credentials setup
 
