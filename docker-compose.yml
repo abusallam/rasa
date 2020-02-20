@@ -31,7 +31,7 @@ x-rasa-credentials: &rasa-credentials
   RASA_MODEL_PULL_INTERVAL: 10
 
 x-rasa-services: &default-rasa-service
-  image: "git.gonkar.com:5001/beta/traefik-rasa-webinar/rasa-spicy:latest"
+  image: "git.gonkar.com:5001/beta/traefik-rasa-webinar/rasa-full:latest"
   ports:
   - "5005"
   command: >
