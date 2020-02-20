@@ -13,8 +13,8 @@ build_image:
     GIT_SUBMODULE_STRATEGY: recursive
   script:
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN git.gonkar.com:5001
-    - docker build --no-cache -t git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-full:latest . -f docker/Dockerfile_full
-    - docker build --no-cache -t git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-sdk:latest . -f docker/rasa-sdk
+    - docker build -t git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-full:latest . -f docker/Dockerfile_full
+    - docker build -t git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-sdk:latest . -f docker/rasa-sdk
     - docker push git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-full:latest
     - docker push git.gonkar.com:5001/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/rasa-sdk:latest
   only:
