@@ -81,7 +81,7 @@ services:
         - "traefik.http.routers.webinarbot-dashboard.entrypoints=https"
         - "traefik.http.services.webinarbot-dashboard.loadbalancer.server.port=5002"
         - "traefik.http.routers.webinarbot-dashboard.tls.certresolver=certbot"
-        - "traefik.http.middlewares.webinarbot-middleware.ipwhitelist.sourcerange=127.0.0.1/32, 109.125.107.40"
+        - "traefik.http.middlewares.webinarbot-dashboard.ipwhitelist.sourcerange=127.0.0.1/32, 109.125.107.40"
 
 
   webinarbot-production:
