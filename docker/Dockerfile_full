@@ -65,6 +65,7 @@ RUN pip install https://github.com/explosion/spacy-models/releases/download/en_c
 # Install Rasa as package
 COPY rasa/rasa ./rasa
 RUN pip install .[sql,spacy,mitie]
+ && pip install lagdetect
 
 # Runtime stage which uses the virtualenv which we built in the previous stage
 FROM base AS runner
