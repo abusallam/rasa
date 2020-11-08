@@ -71,3 +71,17 @@ class ActionWeather(Action):
                 print('URL: ' + str(articles['url']) + "\n")
                 print("############################################################")
                 dispatcher.utter_message('**Source:** ' + str(articles['source']['name']) + '\n **Title:** ' + str(articles['title']) + '\n **URL:** ' + str(articles['url']) + '\n')
+def getLanguage(text):
+    print("text " + text)
+
+    if ((detect(text)) == "ar"):
+        lang = "AR"
+    print("detected lang " + lang)
+    return lang
+
+getLanguage("مرحبا")
+output
+
+text مرحبا
+
+detected lang AR
